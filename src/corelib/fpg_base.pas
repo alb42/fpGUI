@@ -133,13 +133,19 @@ var
   {$IFDEF MSWINDOWS}
   FPG_DEFAULT_FONT_DESC: string = 'Arial-8:antialias=true';
   FPG_DEFAULT_SANS: string = 'Arial';
+  FPG_DEFAULT_FIXED_FONT_DESC: string = 'Courier New-10';
   {$ENDIF}
   {$IFDEF UNIX}
   FPG_DEFAULT_FONT_DESC: string = 'Liberation Sans-10:antialias=true';
   FPG_DEFAULT_SANS: string = 'Liberation Sans';
-  {$ENDIF}
   FPG_DEFAULT_FIXED_FONT_DESC: string = 'Courier New-10';
-
+  {$ENDIF}
+  {$IFDEF AROS}
+  FPG_DEFAULT_FONT_DESC: string = 'XEN-8';
+  FPG_DEFAULT_SANS: string = 'XEN';
+  FPG_DEFAULT_FIXED_FONT_DESC: string = 'fixed-8';
+  {$ENDIF}
+  
 const
   UserNamedColorStart   = 128;
   {$I predefinedcolors.inc}
@@ -611,7 +617,7 @@ type
 
 
   TFileEntryType = (etFile, etDir);
-  TFileListSortOrder = (soNone, soFileName, soCSFileName, soFileExt, soSize, soTime);
+  TFileListSortOrder = (soNone, soFileName, soFilenameR, soCSFileName, soCSFilenameR, soFileExt, soFileExtR, soSize, soSizeR, soTime, soTimeR);
   TFileModeString = string[9];
   TfpgSearchMode = (smAny, smFiles, smDirs);
 
@@ -2623,10 +2629,14 @@ end;
 function StringMatches(const astr, apat: string): boolean;
 var
   pati, si: longint;
+  WasStar: Boolean;
+  StarPos: Integer;
 begin
+  WasStar := False;
   result := True;
   pati := 1;
   si := 1;
+  StarPos := -1;
   while result and (si <= length(astr)) and (pati <= length(apat)) do
   begin
     if (apat[pati] = '?') or (apat[pati] = astr[si]) then
@@ -2634,8 +2644,14 @@ begin
       inc(si);
       inc(pati);
     end
-    else if (apat[pati] = '*') then
+    else if (apat[pati] = '*') or WasStar then
     begin
+      if StarPos < 0 then
+        StarPos := pati;
+      if (apat[pati] = '*') then        
+        WasStar := True
+      else
+        pati := StarPos;  
       while (pati <= length(apat)) and (apat[pati] in ['?','*']) do
         inc(pati);
       if pati > length(apat) then
@@ -2656,7 +2672,7 @@ begin
   end;
 
   result := result and (si > length(astr));
-end;
+end; 
 
 // multiple patterns separated with ;
 function FileNameMatches(const astr, apats: string): boolean;
@@ -2684,7 +2700,12 @@ begin
     end;  { if/else }
     cpat := UpperCase(trim(cpat));
     if cpat <> '' then
+    begin
+      {$ifdef AROS}
+      cpat := StringReplace(cpat, '#?', '*', []);
+      {$endif}
       result := StringMatches(astrupper, cpat);
+    end;  
   until result or (cpat = '');
 end;
 
@@ -2902,10 +2923,15 @@ var
     else
       case AOrder of
         soFileName   : result := UpperCase(newitem.Name) < UpperCase(item.Name);
+        soFileNameR  : result := UpperCase(newitem.Name) > UpperCase(item.Name);
         soCSFileName : result := newitem.Name < item.Name;
+        soCSFileNameR: result := newitem.Name > item.Name;
         soFileExt    : result := UpperCase(newitem.Extension+' '+newitem.Name) < UpperCase(item.Extension+' '+item.Name);
+        soFileExtR   : result := UpperCase(newitem.Extension+' '+newitem.Name) > UpperCase(item.Extension+' '+item.Name);
         soSize       : result := newitem.size < item.size;
+        soSizeR      : result := newitem.size > item.size;
         soTime       : result := newitem.modtime < item.modtime;
+        soTimeR      : result := newitem.modtime > item.modtime;
       else
         result := False;
       end;

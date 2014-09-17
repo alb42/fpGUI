@@ -1,0 +1,16 @@
+#!/bin/bash
+
+fpctarget=`pp:bin/i386-aros/fpc -iTP`-`pp:bin/i386-aros/fpc -iTO`
+#echo $fpctarget
+libpath='../lib/'$fpctarget
+#libpath='pp:units/'$fpctarget'/fpgui/'
+
+# Must we create the output directory?
+if [ ! -d $libpath ]; then
+  echo 'creating directory: '$libpath
+  mkdir $libpath
+  echo ' '
+fi
+
+pp:bin/i386-aros/fpc -dRELEASE -dAROS @extrafpc.cfg  corelib/aros/fpgui_toolkit.pas
+

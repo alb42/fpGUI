@@ -3579,6 +3579,11 @@ begin
     Font(gFontCache.Items[i].FileName, lSize, fnt.IsBold, fnt.IsItalic, AGG_VectorFontCache, Deg2Rad(fnt.Angle));
 end;
 {$ENDIF}
+{$IFDEF AROS}
+begin
+  Font('XEN', 10);
+end;
+{$ENDIF}
 
 procedure TAgg2D.DoSetTextColor(cl: TfpgColor);
 var

@@ -122,7 +122,7 @@ begin
   Add(o);
   o := TIDEMacro.Create(cMacro_Debugger, 'gdb', 'Location of GDB debugger');
   Add(o);
-  o := TIDEMacro.Create(cMacro_ExeExt, {$IFDEF MSWINDOWS} '.exe' {$ENDIF} {$IFDEF UNIX} '' {$ENDIF}, 'Default executable extension');
+  o := TIDEMacro.Create(cMacro_ExeExt, {$IFDEF MSWINDOWS} '.exe' {$ENDIF} {$IFDEF UNIX} '' {$ENDIF} {$IFDEF AROS} '' {$ENDIF}, 'Default executable extension');
   Add(o);
   o := TIDEMacro.Create(cMacro_Target, CPUTarget+'-'+OSTarget, 'Default target');
   Add(o);
