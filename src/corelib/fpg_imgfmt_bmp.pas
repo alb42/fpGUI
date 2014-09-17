@@ -39,11 +39,11 @@ implementation
 uses
   fpg_utils;
 
-{.$IF FPC_FULLVERSION<20602}
+{$IF FPC_FULLVERSION<20602}
 type
   uint16 = word;
   uint32 = cardinal;
-{.$IFEND}
+{$IFEND}
 
 
 procedure ReadImage_OS2BMP(img: TfpgImage; bmp: Pointer; bmpsize: longword); forward;
