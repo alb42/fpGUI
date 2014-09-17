@@ -1,6 +1,6 @@
 #!/bin/bash
 
-fpctarget=`Freepascal:bin/i386-aros/fpc -iTP`-`pp:bin/i386-aros/fpc -iTO`
+fpctarget=`Freepascal:bin/i386-aros/fpc -iTP`-`Freepascal:bin/i386-aros/fpc -iTO`
 #echo $fpctarget
 libpath='../lib/'$fpctarget
 #libpath='pp:units/'$fpctarget'/fpgui/'
