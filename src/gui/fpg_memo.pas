@@ -335,8 +335,6 @@ end;
 
 procedure TfpgMemo.DefaultPopupCopy(Sender: TObject);
 begin
-  if ReadOnly then
-    Exit;
   CopyToClipboard;
 end;
 
@@ -1741,4 +1739,3 @@ begin
 end;
 
 end.
-
