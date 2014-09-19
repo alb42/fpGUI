@@ -163,6 +163,7 @@ type
     FVisible: Boolean;
     FParent: TfpgArosWindow;
     FZeroZero: Boolean;
+    FTitle: string;
     //FMouseInWindow: boolean;
     //FNonFullscreenRect: TfpgRect;
     //FNonFullscreenStyle: longword;
@@ -170,6 +171,7 @@ type
     FSkipResizeMessage: boolean;
     FSkipNextResizeMessage: Boolean;
     QueueAcceptDrops: boolean;
+    function GetScreenTitle: string;
   protected
     BorderWidth: TPoint;
     FWinHandle: TfpgWinHandle;
@@ -209,6 +211,7 @@ type
     procedure   DoMouseEnterLeaveCheck(var AWindow: TfpgArosWindow; uMsg: Cardinal; var msgp: TfpgMessageParams);
 
     property    Visible: Boolean read FVisible;
+    property    ScreenTitle: string read GetScreenTitle;
   end;
 
 
@@ -696,10 +699,11 @@ begin
             fpgSendMessage(nil, Window, FPGM_CLOSE, MsgP);
           end;
           IDCMP_INACTIVEWINDOW: begin           
-            fpgSendMessage(nil, Window, FPGM_ACTIVATE);
+            fpgSendMessage(nil, Window, FPGM_DEACTIVATE);
           end;
           IDCMP_ACTIVEWINDOW: begin
-            fpgSendMessage(nil, Window, FPGM_DEACTIVATE);
+            SetWindowTitles(AWin, PChar(Window.FTitle), PChar(Window.ScreenTitle));
+            fpgSendMessage(nil, Window, FPGM_ACTIVATE);
           end; 
           IDCMP_REFRESHWINDOW: begin
               BeginRefresh(AWin);
@@ -982,6 +986,14 @@ begin
 end;
 
 { TfpgArosWindow }
+
+function TfpgArosWindow.GetScreenTitle: string;
+begin
+  if Parent = nil then
+    Result := FTitle
+  else
+    Result := Parent.ScreenTitle;
+end;
 
 procedure TfpgArosWindow.DoMouseEnterLeaveCheck(var AWindow: TfpgArosWindow; uMsg: Cardinal; var msgp: TfpgMessageParams);
 var
@@ -1348,9 +1360,13 @@ begin
 end;
 }
 
-procedure TfpgArosWindow.DoSetWindowTitle(const atitle: string);
+procedure TfpgArosWindow.DoSetWindowTitle(const ATitle: string);
+var
+  ScTitle: string;
 begin
-  SetWindowTitles(pWindow(WinHandle), PChar(atitle), PChar(atitle));
+  FTitle := ATitle;
+  ScTitle := ScreenTitle;
+  SetWindowTitles(pWindow(WinHandle), PChar(FTitle), PChar(ScTitle));
 end;
 
 procedure TfpgArosWindow.DoSetMouseCursor;
