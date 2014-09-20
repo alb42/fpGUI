@@ -72,25 +72,9 @@ type
     function    GetTextWidth(const txt: string): integer; override;
   end;
 
-  TPenList= class
-  private
-    FPenList: array of record
-      Pen: LongWord;
-      Color: LongWord;
-      Count: Integer;
-    end;
-    function GetIdxByCol(Color: LongWord): Integer;
-    function GetIDxByPen(Pen: LongWord): Integer;
-  public
-    destructor Destroy; override;
-    function GetPen(Color: LongWord): LongWord;
-
-    procedure ForgetPen(Pen: LongWord);
-  end;
-
   TfpgArosImage = class(TfpgImageBase)
   private
-    FMaskMap: array of LongWord;
+    //FMaskMap: array of LongWord;
     FBitmap: array of array of LongWord;
     FRastPort: pRastPort;
     //FIsTwoColor: boolean;
@@ -119,7 +103,6 @@ type
     FClipRectSet: Boolean;
     FLocalRastPort: PRastPort;
     FBuffered: Boolean;
-    PenList: TPenList;
     function GatherPen(cl: TfpgColor): LongWord;
   protected
     procedure   DoSetFontRes(fntres: TfpgFontResourceBase); override;
@@ -322,119 +305,6 @@ begin
   Result := fpgColorToWin(col);
 end;
 
-destructor TPenList.Destroy;
-var
-  i,j: Integer;
-begin
-  for i := 0 to High(FPenList) do
-  begin
-    if FPenList[i].Count > 0 then
-    begin
-      for j := 1 to FPenList[i].Count do
-        ForgetPen(FPenList[i].Pen);
-    end;
-  end;
-  inherited;
-end;
-
-function TPenList.GetIdxByCol(Color: LongWord): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-  for i := 0 to High(FPenList) do
-  begin
-    if FPenList[i].color = color then
-    begin
-      Result := i;
-      Break;
-    end;
-  end;
-end;
-
-function TPenList.GetIDxByPen(Pen: LongWord): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-  for i := 0 to High(FPenList) do
-  begin
-    if FPenList[i].Pen = Pen then
-    begin
-      Result := i;
-      Break;
-    end;
-  end;
-end;
-
-function TPenList.GetPen(Color: LongWord): LongWord;
-var
-  Idx: Integer;
-  i: Integer;
-  r,g,b: LongWord;
-  c: LongWord;
-  Tags: TTagsList;
-begin
-  if Assigned(wapplication.GlobalScreen) then
-  begin
-    Idx := GetIdxByCol(Color);
-    if Idx >= 0 then
-    begin
-      Result := FPenList[Idx].Pen;
-      Inc(FPenList[Idx].Count);
-    end else
-    begin
-      c := fpgColorToWin(Color);
-      //b := (c and $00FF0000) shl 8;
-      //g := (c and $0000FF00) shl 16;
-      //r := (c and $000000FF) shl 24;
-      r := $ff0000;
-      g := 0;
-      b := 0;
-      //writeln('obtain: ', IntToHex(r, 8),' ', IntToHex(g,8), ' ' , IntToHex(b, 8));
-      AddTags(Tags, [LongInt(OBP_Precision), LongInt(PRECISION_ICON), LongInt(OBP_FailIfBad), LongInt(FALSE), LongInt(TAG_DONE), 0]);
-      Result := ObtainBestPenA(wapplication.GlobalScreen^.ViewPort.ColorMap, r, g, b, GetTagPtr(Tags) );
-      Idx := -1;
-      for i := 0 to High(FPenList) do
-      begin
-        if FPenList[i].Count <= 0 then
-        begin
-          Idx := i;
-          Break;
-        end;
-      end;
-      if Idx = -1 then
-      begin
-        Idx := Length(FPenList);
-        SetLength(FPenList, Idx + 1);
-      end;
-      FPenList[Idx].Pen := Result;
-      FPenList[Idx].Color := Color;
-      FPenList[Idx].count := 1;
-    end;
-  end;
-end;
-
-procedure TPenList.ForgetPen(Pen: LongWord);
-var
-  Idx: Integer;
-begin
-  if Assigned(wapplication.GlobalScreen) then
-  begin
-    Idx := GetIdxByPen(Pen);
-    if Idx >= 0 then
-    begin
-      if FPenList[Idx].count > 0 then
-      begin
-        ReleasePen(wapplication.GlobalScreen^.ViewPort.ColorMap, Pen);
-        Dec(FPenList[Idx].count);
-      end;
-    end;
-  end;
-end;
-
-
-
 procedure TWindowList.AddWindow(AWin: PWindow);
 var
   Idx: Integer;
@@ -599,9 +469,6 @@ begin
   Result := False;
 end;
 
-var
-t1: Int64;
-
 function TfpgArosApplication.ProcessAllMessages: Boolean;
 var
   IMsg: PIntuiMessage;
@@ -619,7 +486,6 @@ var
   Buff: array[0..19] of Char;
   ie: TInputEvent;
   Ret: SmallInt;
-  ScrPos: TPoint;
 begin
   Result := True;
   if Assigned(GlobalMsgPort) then
@@ -1077,7 +943,7 @@ var
   Tags: PTagItem;
   FPForm: pWindow;
   FLags: LongWord;
-  bw, bh, w, h: LongInt;
+  bw, bh: LongInt;
   GetBW: Boolean;
 begin
   if FWinHandle > 0 then
@@ -1086,8 +952,8 @@ begin
   //Writeln('Create ' + Self.ClassName,' - ',FLeft,',', FTop,' - ', FWidth, ',', FHeight);
   FParent := TfpgArosWindow(AParent);
   FSkipResizeMessage := True;
-  w := FWidth;
-  h := FHeight;
+  //w := FWidth;
+  //h := FHeight;
   FParentWinHandle := 0;
   AdjustWindowStyle;
 //writeln('create ',FLeft,',', FTop,' - ', FWidth, ',', FHeight);
@@ -1242,7 +1108,6 @@ end;
 procedure TfpgArosWindow.DoSetWindowVisible(const AValue: Boolean);
 var
   MsgP: TfpgMessageParams;
-  dx, dy: Integer;
 begin
   //writeln('Visible ', self.classname , ' -> ', IntToHex(WinHandle, 8), ' ', AValue);
   FVisible := AValue;
@@ -1301,7 +1166,6 @@ end;
 procedure TfpgArosWindow.DoUpdateWindowPosition;
 var
   dx, dy: Integer;
-  MsgP: TfpgMessageParams;
 begin
   if RunningResize then
   begin
@@ -1465,14 +1329,12 @@ begin
   inherited;
   FDrawing      := False;
   FDrawWindow   := nil;
-  PenList := TPenList.Create;
 end;
 
 destructor TfpgArosCanvas.Destroy;
 begin
   if FDrawing then
     DoEndDraw;
-  PenList.Free;
   inherited;
 end;
 
