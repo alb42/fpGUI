@@ -740,7 +740,7 @@ begin
                   msgp.mouse.Buttons := MOUSE_LEFT;
                   if mw is TfpgWidget then
                   begin
-                    if TfpgWidget(mw).FormDesigner <> nil then
+                    //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.CaptureMouse;
                   end;                  
                   fpgSendMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
@@ -749,7 +749,7 @@ begin
                   msgp.mouse.Buttons := MOUSE_LEFT;
                   if mw is TfpgWidget then
                   begin
-                    if TfpgWidget(mw).FormDesigner <> nil then
+                    //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.ReleaseMouse;
                   end;
                   fpgSendMessage(nil, mw, FPGM_MOUSEUP, MsgP);
