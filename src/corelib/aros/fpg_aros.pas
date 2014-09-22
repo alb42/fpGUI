@@ -801,11 +801,12 @@ begin
       if Assigned(FOnIdle) then
       begin
         OnIdle(Self);
-        Sleep(10);
+        //Sleep(10);
       end else
       begin
         Waiting := True;
-        Sleep(25);
+        Sleep(1);
+        //Sleep(25);
         //WaitPort(GlobalMsgPort);
         Waiting := False;
       end;
