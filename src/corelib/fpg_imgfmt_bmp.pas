@@ -157,6 +157,12 @@ begin
 
   p         := bmp;
   PByte(bh) := p;
+  
+  {$ifdef ENDIAN_BIG}
+    bh^.signature := SwapEndian(bh^.signature);
+    bh^.filesize := SwapEndian(bh^.filesize);
+    bh^.dataoffset := SwapEndian(bh^.dataoffset);
+  {$endif}
 
   if bh^.signature = $4d62 then { 'bM' }
   begin
@@ -172,6 +178,19 @@ begin
   Inc(pdata, bh^.dataoffset);
   Inc(p, SizeOf(TBMPHeaderRec));
   PByte(ih) := p;
+  {$ifdef ENDIAN_BIG}
+    ih^.headersize := SwapEndian(ih^.headersize);
+    ih^.Width := SwapEndian(ih^.Width);
+    ih^.Height := SwapEndian(ih^.Height);
+    ih^.planes := SwapEndian(ih^.planes);
+    ih^.bitcount := SwapEndian(ih^.bitcount);
+    ih^.compression := SwapEndian(ih^.compression);
+    ih^.imagesize := SwapEndian(ih^.imagesize);
+    ih^.XpixelsPerM := SwapEndian(ih^.XpixelsPerM);
+    ih^.YpixelsPerM := SwapEndian(ih^.YpixelsPerM);
+    ih^.ColorsUsed := SwapEndian(ih^.ColorsUsed);
+    ih^.ColorsImportant := SwapEndian(ih^.ColorsImportant);
+  {$endif}
   depth := ih^.bitcount;
 
   if depth > 1 then
@@ -181,7 +200,6 @@ begin
     img.AllocateImage(1, ih^.Width, ih^.Height);
     img.AllocateMask;
   end;
-
   //Writeln('width: ',img.width,' height: ',img.height,' depth: ',depth);
   //Writeln('compression: ',ih^.compression);
 
@@ -393,6 +411,19 @@ begin
   ppal      := nil;
   p         := bmp;
   PByte(bh) := p;
+  {$ifdef ENDIAN_BIG}
+    bh^.usType := SwapEndian(bh^.usType);
+    bh^.cbSize := SwapEndian(bh^.cbSize);
+    bh^.xHotspot := SwapEndian(bh^.xHotspot);
+    bh^.yHotspot := SwapEndian(bh^.yHotspot);
+    bh^.DataOffset := SwapEndian(bh^.DataOffset);
+    // BITMAP INFO HEADER
+    bh^.cbFIx := SwapEndian(bh^.cbFIx);
+    bh^.Width := SwapEndian(bh^.Width);
+    bh^.Height := SwapEndian(bh^.Height);
+    bh^.cPlanes := SwapEndian(bh^.cPlanes);
+    bh^.BitCount := SwapEndian(bh^.BitCount);
+  {$endif}
 
   pdata := bmp;
   Inc(pdata, bh^.DataOffset);

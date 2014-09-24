@@ -1661,22 +1661,17 @@ begin
   FDefaultFont := GetFont(FPG_DEFAULT_FONT_DESC);
   fpgInitTimers;
   fpgNamedFonts := TList.Create;
-
   { If the end-user passed in a style, try and create an instance of it }
   if gCommandLineParams.IsParam('style') then
     fpgStyleManager.SetStyle(gCommandLineParams.GetParam('style'));
   fpgStyle := fpgStyleManager.Style;
-
   fpgCaret      := TfpgCaret.Create;
   fpgImages     := TfpgImages.Create;
-
   fpgCreateStandardImages;
-
   // This will process Application and fpGUI Toolkit translation (*.po) files
   TranslateResourceStrings(ApplicationName, ExtractFilePath(ParamStr(0)), '');
   SetupLocalizationStrings;
   CreateHintWindow;
-
   FHintTimer := TfpgTimer.Create(HintPause);
   FHintTimer.OnTimer := @HintTimerFired;
 end;

@@ -31,7 +31,12 @@ uses
   SysUtils,
   Contnrs,
   StrUtils,
-  Intuition, InputEvent, exec, utility, tagsarray, agraphics, diskfont, amigados,
+  {$ifdef amiga}
+  AROSIntuition, 
+  {$else}
+  Intuition,
+  {$endif}
+  InputEvent, exec, utility, tagsarray, agraphics, diskfont, amigados,
   keymap, layers, clipboard,
   fpg_base,
   fpg_impl
@@ -41,6 +46,8 @@ uses
 
   ,fpg_OLEDragDrop
   ;
+
+
 
 type
   // forward declaration
@@ -76,7 +83,7 @@ type
   private
     //FMaskMap: array of LongWord;
     FBitmap: array of array of LongWord;
-    FRastPort: pRastPort;
+    //FRastPort: pRastPort;
     //FIsTwoColor: boolean;
     orgDepth: LongInt;
   protected
@@ -289,6 +296,19 @@ var
 // some required keyboard functions
 {$INCLUDE fpg_keys_Aros.inc}
 
+function CreateRastPort: PRastPort;
+var
+  rp: PRastPort;
+begin
+  rp := GetMem(Sizeof(TRastPort));
+  InitRastPort(rp);
+  CreateRastPort := rp;
+end;
+
+procedure FreeRastPort(RP: PRastPort);
+begin
+  FreeMem(rp);
+end;
 
 function fpgColorToWin(col: TfpgColor): longword;
 var
@@ -399,6 +419,7 @@ var
   i: Integer;
   str: string;
 begin
+  //writeln('-->GetFontFaceList');
   Result := TStringList.Create;
   //Result.Add('');
   GetMem(Test, 4096);
@@ -424,6 +445,7 @@ begin
   end;
   Result.Sort;
   FreeMem(Test);
+  //writeln('<--GetFontFaceList');
 end;
 
 procedure TfpgArosApplication.SetDrag(const AValue: TfpgArosDrag);
@@ -435,6 +457,7 @@ end;
 
 constructor TfpgArosApplication.Create(const AParams: string);
 begin
+  //writeln('--> create Application');
   inherited Create(AParams);
   WindowList := TWindowList.Create;
   GlobalMsgPort := CreateMsgPort;
@@ -442,6 +465,7 @@ begin
   wapplication   := TfpgApplication(self);
   Waiting := False;
   BlockRefresh := True;
+  //writeln('<-- create Application');
 end;
 
 destructor TfpgArosApplication.Destroy;
@@ -487,6 +511,7 @@ var
   ie: TInputEvent;
   Ret: SmallInt;
 begin
+  //writeln('--> processmessages');
   Result := True;
   if Assigned(GlobalMsgPort) then
   begin
@@ -551,7 +576,7 @@ begin
           begin  
             if (IClass = IDCMP_INACTIVEWINDOW) and TfpgAROSWindow(wapplication.TopModalForm).HandleIsValid then 
             begin // if ModalWindow is active activate the modalwindow again
-              intuition.ActivateWindow(pWindow(TfpgAROSWindow(wapplication.TopModalForm).WinHandle));
+              arosintuition.ActivateWindow(pWindow(TfpgAROSWindow(wapplication.TopModalForm).WinHandle));
               Continue;
             end;
             if not ((IClass = IDCMP_REFRESHWINDOW) or (IClass = IDCMP_NEWSIZE))then
@@ -573,7 +598,7 @@ begin
           end; 
           IDCMP_REFRESHWINDOW: begin
               BeginRefresh(AWin);
-              EndRefresh(AWin, True);
+              EndRefresh(AWin, LTrue);
               fpgSendMessage(nil, Window, FPGM_PAINT, MsgP);
             end;
           IDCMP_INTUITICKS:begin
@@ -740,7 +765,7 @@ begin
                   msgp.mouse.Buttons := MOUSE_LEFT;
                   if mw is TfpgWidget then
                   begin
-                    if TfpgWidget(mw).FormDesigner <> nil then
+                    //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.CaptureMouse;
                   end;                  
                   fpgSendMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
@@ -749,7 +774,7 @@ begin
                   msgp.mouse.Buttons := MOUSE_LEFT;
                   if mw is TfpgWidget then
                   begin
-                    if TfpgWidget(mw).FormDesigner <> nil then
+                    //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.ReleaseMouse;
                   end;
                   fpgSendMessage(nil, mw, FPGM_MOUSEUP, MsgP);
@@ -782,6 +807,7 @@ begin
       //t1 := GetmsCount;
     until (not IsMsgAvail) or (GlobalMsgPort = nil);
   end;
+  //writeln('<-- processmessages');
 end;
 
 procedure TfpgArosApplication.DoWaitWindowMessage(atimeoutms: integer);
@@ -801,11 +827,12 @@ begin
       if Assigned(FOnIdle) then
       begin
         OnIdle(Self);
-        Sleep(10);
+        //Sleep(10);
       end else
       begin
         Waiting := True;
-        Sleep(25);
+        Sleep(1);
+        //Sleep(25);
         //WaitPort(GlobalMsgPort);
         Waiting := False;
       end;
@@ -956,7 +983,7 @@ begin
   //h := FHeight;
   FParentWinHandle := 0;
   AdjustWindowStyle;
-//writeln('create ',FLeft,',', FTop,' - ', FWidth, ',', FHeight);
+  //writeln('create ',FLeft,',', FTop,' - ', FWidth, ',', FHeight);
   Flags :=  WFLG_OTHER_REFRESH or WFLG_REPORTMOUSE or WFLG_RMBTRAP;
   if (WindowType in [wtPopup]) or (waBorderLess in FWindowAttributes) or (AParent <> nil) then
   begin
@@ -1118,14 +1145,14 @@ begin
       ModifyIDCMP(pWindow(WinHandle), pWindow(WinHandle)^.IDCMPFlags or IDCMP_INTUITICKS);
       UpdateWindowPosition;
       FSkipResizeMessage := True;
-      intuition.ActivateWindow(pWindow(WinHandle));
+      arosintuition.ActivateWindow(pWindow(WinHandle));
       FSkipResizeMessage := False;
     end else
     begin
       if Parent <> nil then
       begin
         // dirty hack to hide items because HideWindow does NOT work!
-        intuition.ChangeWindowBox(pWindow(WinHandle),  -2000,  -2000, FWidth, FHeight);
+        arosintuition.ChangeWindowBox(pWindow(WinHandle),  -2000,  -2000, FWidth, FHeight);
       end;
     end;
     {if AValue then
@@ -1156,7 +1183,7 @@ begin
     end;
     //Forbid();
     if (dx <> 0) or (dy <> 0) then
-      intuition.MoveWindow(pWindow(WinHandle), dx, dy);
+      arosintuition.MoveWindow(pWindow(WinHandle), dx, dy);
     //Permit();
   end;
   FSkipResizeMessage := False;
@@ -1182,16 +1209,16 @@ begin
       //writeln('Move to: ', dx, ' ; ', dy);
       //intuition.MoveWindow(pWindow(WinHandle), FLeft - pWindow(WinHandle)^.LeftEdge, FTop - pWindow(WinHandle)^.TopEdge);
       //intuition.SizeWindow(pWindow(WinHandle), FWidth - pWindow(WinHandle)^.Width, FHeight - pWindow(WinHandle)^.Height);
-      intuition.ChangeWindowBox(pWindow(WinHandle),  dx,  dy, FWidth, FHeight);
+      arosintuition.ChangeWindowBox(pWindow(WinHandle),  dx,  dy, FWidth, FHeight);
       //fpgSendMessage(nil, self.Parent, FPGM_PAINT, MsgP);
       //fpgSendMessage(nil, self, FPGM_PAINT, MsgP);
       RunningResize := True;
     end else
     begin
       if ZeroZero then
-        intuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth + pWindow(WinHandle)^.BorderLeft + pWindow(WinHandle)^.BorderRight, FHeight + pWindow(WinHandle)^.BorderTop + pWindow(WinHandle)^.BorderBottom)
+        arosintuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth + pWindow(WinHandle)^.BorderLeft + pWindow(WinHandle)^.BorderRight, FHeight + pWindow(WinHandle)^.BorderTop + pWindow(WinHandle)^.BorderBottom)
       else
-        intuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth, FHeight);    
+        arosintuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth, FHeight);    
       //fpgSendMessage(nil, Self, FPGM_PAINT, MsgP);
     end;  
   end;
@@ -1239,14 +1266,14 @@ begin
   if not HasHandle then
     Exit;
   //writeln('Do Set Cursor ', Ord(FMouseCursor), ' busy: ', Ord(mcHourGlass));  
-  case FMouseCursor of
+  (*case FMouseCursor of
     mcHourGlass:
     begin
       SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, True, TAG_DONE, 0]);
     end;  
     else
       SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, False, TAG_DONE, 0]);
-  end;  
+  end; *) 
 end;
 
 procedure TfpgArosWindow.DoDNDEnabled(const AValue: boolean);
@@ -1271,6 +1298,7 @@ end;
 
 constructor TfpgArosWindow.Create(AOwner: TComponent);
 begin
+  //writeln(self.classname, ' -> create');
   inherited Create(AOwner);
   FSkipNextResizeMessage := False;
   FWinHandle := 0;
@@ -1280,6 +1308,7 @@ begin
   FFullscreenIsSet := false;
   FUserMimeSelection := '';
   FUserAcceptDrag := False;
+  //writeln(self.classname, ' <- create');
 end;
 
 destructor TfpgArosWindow.Destroy;
@@ -1291,7 +1320,7 @@ procedure TfpgArosWindow.ActivateWindow;
 begin
   //writeln(self.classname, ' activated');
   if HandleIsValid then
-    intuition.ActivateWindow(pWindow(WinHandle));
+    arosintuition.ActivateWindow(pWindow(WinHandle));
 end;
 
 procedure TfpgArosWindow.CaptureMouse;
@@ -1342,6 +1371,7 @@ procedure TfpgArosCanvas.DoBeginDraw(awin: TfpgWindowBase; buffered: boolean);
 var
   Win: pWindow;
 begin
+  //writeln('-->begindraw');
   FDrawWindow := nil; 
   if not Assigned(AWin) then
     Exit;
@@ -1361,12 +1391,17 @@ begin
   if FBuffered then
   begin
     FLocalRastPort := FRastPort;
+    //writeln('CreateRastport');
     FRastPort := CreateRastPort;
+    //writeln('created Rastport');
     FRastPort^.Layer := nil;
+    //writeln('alloc bitmap');
     FRastPort^.Bitmap := AllocBitMap(RWidth, RHeight, FLocalRastPort^.Bitmap^.Depth, BMF_CLEAR, FLocalRastPort^.Bitmap);
+    //writeln('allocated bitmap');
   end;
   SetDrMd(FRastPort, JAM1);
   wapplication.DrawRastPort := FRastPort;
+  //writeln('-->enddraw');  
 end;
 
 procedure TfpgArosCanvas.DoPutBufferToScreen(x, y, w, h: TfpgCoord);
@@ -1828,12 +1863,14 @@ end;
 
 constructor TfpgArosImage.Create;
 begin
-  FRastPort := CreateRastPort;
-  FRastPort^.Bitmap := nil;
+  //FRastPort := CreateRastPort;
+  //FRastPort^.Bitmap := nil;
+  inherited;
 end;
 
 procedure TfpgArosImage.DoFreeImage;
 begin
+  (*
   if Assigned(FRastPort) then
   begin
     if Assigned(FRastPort^.Bitmap) then
@@ -1843,8 +1880,9 @@ begin
     end;  
     FreeRastPort(FRastPort);
     FRastPort := nil;
+    *)
     SetLength(FBitmap, 0);
-  end;
+  //end;
 end;
 
 procedure TfpgArosImage.DoInitImage(acolordepth, awidth, aheight: integer; aimgdata: Pointer);
@@ -1859,11 +1897,11 @@ begin
     BL := 1
   else
     BL := 24;
-  if not Assigned(FRastPort) then
-  begin
-    FRastPort := CreateRastPort;
-  end;
-  FRastPort^.Bitmap := AllocBitMap(AWidth, AHeight, BL, BMF_CLEAR, nil);
+  //if not Assigned(FRastPort) then
+  //begin
+  //  FRastPort := CreateRastPort;
+  //end;
+  //FRastPort^.Bitmap := AllocBitMap(AWidth, AHeight, BL, BMF_CLEAR, nil);
   if BL = 24 then
   begin
     SetLength(FBitmap, AWidth, AHeight);
@@ -1878,6 +1916,7 @@ begin
       end;
     end;
   end;
+  //writeln('end initImage: ', awidth, ', ', aheight);
 end;
 
 procedure TfpgArosImage.DoInitImageMask(awidth, aheight: integer; aimgdata: Pointer);
@@ -1889,12 +1928,12 @@ end;
 
 function TfpgArosClipboard.DoGetText: TfpgString;
 begin
-  Result := GetTextFromClip(PRIMARY_CLIP);
+  //Result := GetTextFromClip(PRIMARY_CLIP);
 end;
 
 procedure TfpgArosClipboard.DoSetText(const AValue: TfpgString);
 begin
-  PutTextToClip(PRIMARY_CLIP, AValue);
+  //PutTextToClip(PRIMARY_CLIP, AValue);
 end;
 
 procedure TfpgArosClipboard.InitClipboard;
@@ -1953,6 +1992,66 @@ begin
 end;
 
 
+function BADDR(bval: LongInt): Pointer; Inline;
+begin
+  BADDR:=Pointer(bval Shl 2);
+end;
+
+function BSTR2STRING(s : Pointer): PChar; Inline;
+begin
+  BSTR2STRING:=PChar(BADDR(PtrInt(s)))+1;
+end;
+
+function BSTR2STRING(s : LongInt): PChar; Inline;
+begin
+  BSTR2STRING:=PChar(BADDR(s))+1;
+end;
+
+{$PACKRECORDS 2}
+type
+  PADosList = ^TADosList;
+  TADosList = record
+    dol_Next: BPTR;           {    bptr to next device on list }
+    dol_Type: LongInt;        {    see DLT below }
+    dol_Task: PMsgPort;       {    ptr to handler task }
+    dol_Lock: BPTR;
+    case SmallInt of
+      0 :(
+        dol_Handler : record
+          dol_Handler: BSTR;      {    file name to load IF seglist is null }
+          dol_StackSize,              {    stacksize to use when starting process }
+          dol_Priority: LongInt;               {    task priority when starting process }
+          dol_Startup: BPTR;   {    startup msg: FileSysStartupMsg for disks }
+{$ifdef aros}
+          dol_NoAROS3: array[0..1] of BPTR; 
+{$else}          
+          dol_SegList,                {    already loaded code for new task }
+          dol_GlobVec: BPTR;      {    BCPL global vector to use when starting }
+{$endif}  
+          dol_Name: BSTR;           {    bptr to bcpl name }
+{$ifdef aros}
+  {$ifndef AROS_DOS_PACKETS}         
+          dol_Reserved: array[0..5] of LongInt;
+  {$endif}           
+{$endif}          
+        end;
+      );
+      1 :(
+        dol_Volume: record
+          dol_VolumeDate: TDateStamp; {    creation date }
+          dol_LockList: BPTR;       {    outstanding locks }
+          dol_DiskType: LongInt;    {    'DOS', etc }
+          dol_Unused: BPTR
+        end;
+      );
+      2 :(
+        dol_assign:  record
+          dol_AssignName: STRPTR;        {    name for non-OR-late-binding assign }
+          dol_List: PAssignList;   {    for multi-directory assigns (regular) }
+        end;
+      );
+    end; 
+
 procedure TfpgArosFileList.PopulateSpecialDirs(const aDirectory: TfpgString);
 const
   IgnoreDevs: array[0..10] of string =('NIL:','XPIPE:','EMU:','PED:','PRJ:','PIPE:','CON:','RAW:','SER:','PAR:','PRT:');
@@ -1973,19 +2072,22 @@ const
   end;
   
 var
-  Dl : PDosList;
+  Dl : PADosList;
   Temp: PChar;
   Str: string;
 begin
   Forbid();
   FSpecialDirs.Clear;
-  Dl := LockDosList(LDF_DEVICES or LDF_READ);
+  Dl := PADosList(LockDosList(LDF_DEVICES or LDF_READ));
   repeat
-     Dl := NextDosEntry(Dl, LDF_DEVICES);
+     Dl := PADosList(NextDosEntry(PDosList(Dl), LDF_DEVICES));
      if Dl <> nil then
      begin
+       {$ifdef i386}
        Temp := PChar(Dl^.dol_Handler.dol_Name);
-       //Temp := BSTR2STRING(Dl^.dol_Name);
+       {$else}
+       Temp := BSTR2STRING(Dl^.dol_Handler.dol_Name);
+       {$endif}
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
        begin
@@ -1994,13 +2096,16 @@ begin
      end;
   until Dl = nil;
   UnLockDosList(LDF_DEVICES or LDF_READ);
-  Dl := LockDosList(LDF_VOLUMES or LDF_READ);
+  Dl := PADosList(LockDosList(LDF_VOLUMES or LDF_READ));
   repeat
-     Dl := NextDosEntry(Dl, LDF_VOLUMES);
+     Dl := PADosList(NextDosEntry(PDosList(Dl), LDF_VOLUMES));
      if Dl <> nil then
      begin
+       {$ifdef i386}
        Temp := PChar(Dl^.dol_Handler.dol_Name);
-       //Temp := BSTR2STRING(Dl^.dol_Name);
+       {$else}
+       Temp := BSTR2STRING(Dl^.dol_Handler.dol_Name);
+       {$endif}
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
        begin
@@ -2009,13 +2114,16 @@ begin
      end;
   until Dl = nil;
   UnLockDosList(LDF_VOLUMES or LDF_READ);
-  Dl := LockDosList(LDF_ASSIGNS or LDF_READ);
+  Dl := PADosList(LockDosList(LDF_ASSIGNS or LDF_READ));
   repeat
-     Dl := NextDosEntry(Dl, LDF_ASSIGNS);
+     Dl := PADosList(NextDosEntry(PDosList(Dl), LDF_ASSIGNS));
      if Dl <> nil then
      begin
+       {$ifdef i386}
        Temp := PChar(Dl^.dol_Handler.dol_Name);
-       //Temp := BSTR2STRING(Dl^.dol_Name);
+       {$else}
+       Temp := BSTR2STRING(Dl^.dol_Handler.dol_Name);
+       {$endif}
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
        begin
@@ -2025,7 +2133,9 @@ begin
   until Dl = nil;
   UnLockDosList(LDF_ASSIGNS or LDF_READ);
   Permit();
+
   inherited PopulateSpecialDirs(aDirectory);
+  
 end;
 
 { TfpgArosDrag }
