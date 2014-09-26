@@ -4489,6 +4489,25 @@ begin
 end;
 
 
+procedure CheckForAROS;
+var
+  AROSBase: PLibrary;
+begin
+  AROSBase := OpenLibrary('aros.library', 0);
+  if not assigned(AROSBase) then
+  begin
+    writeln('This program needs AROS to run');
+    halt(5);
+  end;
+  CloseLibrary(AROSBase);
+end;
+
+
+initialization
+
+  CheckForAROS; // a program include this unit is AROS Only
+finalization
+
 END. (* UNIT INTUITION *)
 
 
