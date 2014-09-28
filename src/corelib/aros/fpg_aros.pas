@@ -391,6 +391,17 @@ end;
 
 { TfpgArosApplication }
 
+type
+  TAROSFont = record
+    BaseName: string;
+    Normal: string;
+    Italic: string;
+    Bold: string;
+    BoldItalic: string;
+  end;
+  TAROSFontList = array of TAROSFont;
+var
+  AROSFontList: TAROSFontList;
 
 function TfpgArosApplication.DoGetFontFaceList: TStringList;
 //var
@@ -400,34 +411,105 @@ var
   pH: pAvailFontsHeader;
   Count: Integer;
   paf: pAvailFonts;
-  i: Integer;
+  i,f,Idx: Integer;
   str: string;
+  isBold: Boolean;
+  IsItalic: Boolean;
+  filename: string;
 begin
   Result := TStringList.Create;
-  //Result.Add('');
-  GetMem(Test, 4096);
-  //writeln('get font start');
-  if AvailFonts(test, 4096, AFF_DISK) = 0 then
+  if Length(AROSFontList) = 0 then
   begin
+    //Result.Add('');
+    GetMem(Test, 4096);
     //writeln('get font start');
-    ph := Test;
-    Count := ph^.afh_NumEntries;
-    //writeln('found ', Count,'Entries');
-    inc(Ph);
-    paf := Pointer(ph);
-    for i := 0 to Count - 1 do
+    if AvailFonts(test, 4096, AFF_DISK) = 0 then
     begin
-      str := LowerCase(string(PAf^.af_Attr.ta_Name));
-      str := StringReplace(str, '.font', '', [rfReplaceAll, rfIgnoreCase]);
-      if Result.IndexOf(str) < 0 then
+      //writeln('get font start');
+      ph := Test;
+      Count := ph^.afh_NumEntries;
+      //writeln('found ', Count,'Entries');
+      inc(Ph);
+      paf := Pointer(ph);
+      for i := 0 to Count - 1 do
       begin
-        Result.Add(str);
+        str := LowerCase(string(PAf^.af_Attr.ta_Name));      
+        filename := str;
+        str := LowerCase(string(PAf^.af_Attr.ta_Name));
+        str := StringReplace(str, '.font', '', [rfReplaceAll, rfIgnoreCase]);
+        isBold := False;
+        isItalic := False;
+        if Pos('italic', str) > 0 then
+        begin
+          isItalic := True;
+          str := StringReplace(str, 'italic', '', [rfReplaceAll, rfIgnoreCase]);
+        end;
+        if (Pos('bold', str) > 0) then
+        begin
+          isBold := True;
+          str := StringReplace(str, 'bold', '', [rfReplaceAll, rfIgnoreCase]);
+        end;
+        str := Trim(str);
+        Idx := -1;
+        for f := 0 to High(AROSFontList) do
+        begin
+          if str = AROSFontList[f].BaseName then
+          begin
+            Idx := f;
+            Break;
+          end;
+        end;
+        if Idx < 0 then
+        begin
+          Idx := Length(AROSFontList);
+          SetLength(AROSFontList, Idx + 1);
+          AROSFontList[Idx].BaseName := str;
+          AROSFontList[Idx].Normal := '';
+          AROSFontList[Idx].Bold := '';
+          AROSFontList[Idx].Italic := '';
+          AROSFontList[Idx].BoldItalic := '';
+        end;
+        if isItalic then
+        begin
+          if isBold then
+            AROSFontList[Idx].BoldItalic := filename
+          else
+            AROSFontList[Idx].Italic := filename;        
+        end else
+        begin
+          if isBold then
+            AROSFontList[Idx].Bold := filename
+          else
+            AROSFontList[Idx].Normal := filename;  
+        end;
+        inc(Paf);
       end;
-      inc(Paf);
     end;
+    for i := 0 to High(AROSFontList) do
+    begin
+      FileName := AROSFontList[i].Normal;
+      if Filename = '' then
+        filename := AROSFontList[i].Bold; 
+      if Filename = '' then
+        filename := AROSFontList[i].Italic;
+      if Filename = '' then
+        filename := AROSFontList[i].BoldItalic;
+      if AROSFontList[i].Normal = '' then
+        AROSFontList[i].Normal := filename;
+      if AROSFontList[i].Bold = '' then
+        AROSFontList[i].Bold := filename;
+      if AROSFontList[i].Italic = '' then
+        AROSFontList[i].Italic := filename;
+      if AROSFontList[i].BoldItalic = '' then
+        AROSFontList[i].BoldItalic := filename;  
+    end;
+    FreeMem(Test);
+  end;  
+  for i := 0 to High(AROSFontList) do
+  begin
+    Result.Add(AROSFontList[i].BaseName);    
   end;
   Result.Sort;
-  FreeMem(Test);
 end;
 
 procedure TfpgArosApplication.SetDrag(const AValue: TfpgArosDrag);
@@ -1665,6 +1747,10 @@ var
   prop: string;
   TextAttr: tTextAttr;
   Height: integer;
+  i, Idx: Integer;
+  Filename: string;
+  IsBold: Boolean;
+  IsItalic: Boolean;
 
   function NextC: char;
   begin
@@ -1699,6 +1785,8 @@ begin
     Height := StrToIntDef(token, 8);
   end;
   TextAttr.ta_Style := FS_NORMAL;
+  IsItalic := False;
+  IsBold := False;
   while c = ':' do
   begin
     NextC;
@@ -1710,22 +1798,60 @@ begin
       NextC;
       NextToken;
     end;
-
+    
+    if Prop = 'BOLD' then
+      IsBold := True;
+    if Prop = 'ITALIC' then
+      IsItalic := True;  
+      
     if prop = 'BOLD' then
     begin
-      TextAttr.ta_Style := FSF_BOLD;
-    end
-    else if prop = 'ITALIC' then
+      TextAttr.ta_Style := TextAttr.ta_Style or FSF_BOLD;
+    end; 
+    if prop = 'ITALIC' then
     begin
-      TextAttr.ta_Style := FSF_ITALIC
+      TextAttr.ta_Style := TextAttr.ta_Style or FSF_ITALIC
     end;
   end;
-  TextAttr.ta_Name := PChar(facename + '.font');
+  Idx := -1;
+  for i := 0 to High(AROSFontList) do
+  begin
+    if LowerCase(trim(facename)) = AROSFontList[i].BaseName then
+    begin
+      Idx := i;
+      Break;
+    end;
+  end;
+  if Idx >= 0 then
+  begin
+    Filename := AROSFontList[i].Normal;
+    if IsItalic then
+    begin
+      if IsBold then
+        Filename := AROSFontList[i].BoldItalic
+      else
+        Filename := AROSFontList[i].Italic; 
+    end else
+    begin
+      if IsBold then
+        Filename := AROSFontList[i].Bold
+      else
+        Filename := AROSFontList[i].Normal;   
+    end;  
+  end else
+  begin
+    FileName := facename + '.font'; 
+  end;  
+  
+  TextAttr.ta_Name := PChar(FileName);
   TextAttr.ta_YSize := Height;
   TextAttr.ta_Flags := FPF_DISKFONT;
   Result := OpenDiskFont(@TextAttr);
-  //if Result = nil then
-    //writeln(' cant open Font ', TextAttr.ta_Name, ' Size: ', TextAttr.ta_YSize);
+  {if Result = nil then
+    writeln(idx,' cant open Font ', desc, ' filename: ', FileName)
+  else
+    writeln(idx,' successful open Font ', desc, ' filename: ', FileName);
+   } 
 end;
 
 
