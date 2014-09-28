@@ -1,7 +1,7 @@
 {
     fpGUI  -  Free Pascal GUI Toolkit
 
-    Copyright (C) 2006 - 2011 See the file AUTHORS.txt, included in this
+    Copyright (C) 2006 - 2014 See the file AUTHORS.txt, included in this
     distribution, for details of the copyright.
 
     See the file COPYING.modifiedLGPL, included in this distribution,
@@ -32,7 +32,7 @@ uses
   Contnrs,
   StrUtils,
   Intuition, InputEvent, exec, utility, tagsarray, agraphics, diskfont, amigados,
-  keymap, layers, clipboard,
+  keymap, layers, clipboard, cybergraphics,
   fpg_base,
   fpg_impl
   {$IFDEF DEBUG}
@@ -43,6 +43,14 @@ uses
   ;
 
 type
+  TARGBPixel = packed record
+    A: Byte;
+    R: Byte;
+    G: Byte;
+    B: Byte;
+  end;
+  PARGBPixel = ^TARGBPixel;
+
   // forward declaration
   TfpgArosWindow = class;
   //TArosDragManager = class;
@@ -74,11 +82,7 @@ type
 
   TfpgArosImage = class(TfpgImageBase)
   private
-    //FMaskMap: array of LongWord;
-    FBitmap: array of array of LongWord;
-    FRastPort: pRastPort;
-    //FIsTwoColor: boolean;
-    orgDepth: LongInt;
+    FImage: PARGBPixel;
   protected
     procedure   DoFreeImage; override;
     procedure   DoInitImage(acolordepth, awidth, aheight: integer; aimgdata: Pointer); override;
@@ -1610,45 +1614,15 @@ begin
 end;
 
 procedure TfpgArosCanvas.DoDrawImagePart(x, y: TfpgCoord; img: TfpgImageBase; xi, yi, w, h: integer);
-const
-  DSTCOPY     = $00AA0029;
-  ROP_DSPDxax = $00E20746;
 var
-  xr, yr: LongInt;
-  c,r,g,b, Pen: LongWord;
-  pv: pView;
-  V: PViewPort;
-  MaxX: Integer;
-  MaxY: Integer;
+  NImg: TfpgArosImage;
 begin
   if not FDrawing then
     Exit;
   if img = nil then
-  begin
-    //writeln('img = nil');
     Exit; //==>
-  end;
-  Pen := 255;
-  pv := ViewAddress();
-  V := pv^.ViewPort;
-  MaxX := Min((xi + w) - 1, High(TfpgArosImage(Img).FBitmap));
-  MaxY := Min((yi + h) - 1, High(TfpgArosImage(Img).FBitmap[0]));
-  for yr := yi to MaxY do
-  begin
-    for xr := xi to MaxX do
-    begin
-      c := TfpgArosImage(Img).FBitmap[xr,yr];
-      if c = $00FF00FF then
-        Continue;
-      b := (c and $00FF0000) shl 8;
-      g := (c and $0000FF00) shl 16;
-      r := (c and $000000FF) shl 24;
-      Pen := 255;
-      SetRGB32(V, Pen, r, g, b);
-      SetAPen(FRastPort, Pen);
-      WritePixel(FRastPort, x + (xr-xi), y + (yr-yi));
-    end;
-  end;
+  NImg := TfpgArosImage(Img);
+  WritePixelArrayAlpha(NImg.FImage, xi, yi, NImg.Width * SizeOf(LongWord), FRastPort, x, y, w, h, 255);
 end;
 
 procedure TfpgArosCanvas.DoXORFillRectangle(col: TfpgColor; x, y, w, h: TfpgCoord);
@@ -1675,8 +1649,8 @@ end;
 
 destructor TfpgArosFontResource.Destroy;
 begin
-  //if HandleIsValid then
-  //  CloseFont(FFontData);
+  if HandleIsValid then
+    CloseFont(FFontData);
   inherited;
 end;
 
@@ -1829,61 +1803,100 @@ end;
 
 constructor TfpgArosImage.Create;
 begin
-  FRastPort := CreateRastPort;
-  FRastPort^.Bitmap := nil;
+  inherited;
+  FImage := nil;
 end;
 
 procedure TfpgArosImage.DoFreeImage;
 begin
-  if Assigned(FRastPort) then
-  begin
-    if Assigned(FRastPort^.Bitmap) then
-    begin
-      FreeBitmap(FRastPort^.Bitmap);
-      FRastPort^.Bitmap := nil;
-    end;  
-    FreeRastPort(FRastPort);
-    FRastPort := nil;
-    SetLength(FBitmap, 0);
-  end;
+  FreeMem(FImage);
 end;
 
 procedure TfpgArosImage.DoInitImage(acolordepth, awidth, aheight: integer; aimgdata: Pointer);
 var
   Col: PLongWord;
   c: LongWord;
-  BL: Integer;
-  x, y: Integer;
+  Aim, Src: PLongWord;
+  x, y, i: Integer;
 begin
-  orgDepth := Acolordepth;
-  if acolordepth = 1 then
-    BL := 1
-  else
-    BL := 24;
-  if not Assigned(FRastPort) then
+  if acolordepth > 1 then
   begin
-    FRastPort := CreateRastPort;
-  end;
-  FRastPort^.Bitmap := AllocBitMap(AWidth, AHeight, BL, BMF_CLEAR, nil);
-  if BL = 24 then
-  begin
-    SetLength(FBitmap, AWidth, AHeight);
-    Col := AimgData;
-    for y := 0 to aHeight - 1 do
+    if Assigned(FImage) then
     begin
-      for x := 0 to aWidth - 1 do
+      if (FWidth <> AWidth) or (FHeight <> AHeight) then
       begin
-        c := fpgColorToWin(Col^);
-        FBitmap[x,y] := c;
-        Inc(Col);
+        FreeMem(FImage);
+        FImage := GetMem(AWidth * AHeight * SizeOf(LongWord));
       end;
+    end else
+    begin
+      FImage := GetMem(AWidth * AHeight * SizeOf(LongWord));
+    end;
+    FWidth := AWidth;
+    FHeight := AHeight;
+    Src := Pointer(AImgData);
+    Aim := Pointer(FImage);
+    for i := 0 to (AWidth * AHeight) - 1 do
+    begin
+      {$ifdef ENDIAN_LITTLE}
+      Aim^ := SwapEndian(Src^);
+      {$else}
+      Aim^ := Src^;
+      {$endif}
+      PARGBPixel(Aim)^.A := 255;
+      Inc(Src);
+      Inc(Aim);
     end;
   end;
 end;
 
 procedure TfpgArosImage.DoInitImageMask(awidth, aheight: integer; aimgdata: Pointer);
+var
+  x,y: Integer;
+  c: PARGBPixel;
+  Shift: Integer;
+  Mask: PLongWord;
+  M: LongWord;
 begin
-  //writeln('Initmask not implemented');
+  if Assigned(FImage) and (FWidth = AWidth) and (FHeight = AHeight) then
+  begin
+    c := FImage;
+    Shift := 0;
+    Mask := AimgData;
+    M := SwapEndian(Mask^);
+    for y := 0 to AHeight - 1 do
+    begin
+      for x := 0 to AWidth - 1 do
+      begin   
+        if M and (1 shl (31 - Shift)) <> 0 then
+          c^.A := 255
+        else
+          c^.A := 0;          
+        Inc(Shift);
+        if Shift > 31 then
+        begin
+          Inc(Mask);
+          {$ifdef ENDIAN_LITTLE}
+          M := SwapEndian(Mask^);
+          {$else}
+          M := Mask^;
+          {$endif}
+          Shift := 0;
+        end;        
+        Inc(c);
+      end;
+      if Shift > 0 then
+      begin
+        Inc(Mask);
+        {$ifdef ENDIAN_LITTLE}
+        M := SwapEndian(Mask^);
+        {$else}
+        M := Mask^;
+        {$endif}
+        Shift := 0;
+      end;
+    end;
+  end;
 end;
 
 { TfpgArosClipboard }
