@@ -433,7 +433,7 @@ begin
       paf := Pointer(ph);
       for i := 0 to Count - 1 do
       begin
-        str := LowerCase(string(PAf^.af_Attr.ta_Name));      
+        str := LowerCase(string(PAf^.af_Attr.ta_Name));
         filename := str;
         str := LowerCase(string(PAf^.af_Attr.ta_Name));
         str := StringReplace(str, '.font', '', [rfReplaceAll, rfIgnoreCase]);
@@ -474,13 +474,13 @@ begin
           if isBold then
             AROSFontList[Idx].BoldItalic := filename
           else
-            AROSFontList[Idx].Italic := filename;        
+            AROSFontList[Idx].Italic := filename;
         end else
         begin
           if isBold then
             AROSFontList[Idx].Bold := filename
           else
-            AROSFontList[Idx].Normal := filename;  
+            AROSFontList[Idx].Normal := filename;
         end;
         inc(Paf);
       end;
@@ -489,7 +489,7 @@ begin
     begin
       FileName := AROSFontList[i].Normal;
       if Filename = '' then
-        filename := AROSFontList[i].Bold; 
+        filename := AROSFontList[i].Bold;
       if Filename = '' then
         filename := AROSFontList[i].Italic;
       if Filename = '' then
@@ -501,13 +501,13 @@ begin
       if AROSFontList[i].Italic = '' then
         AROSFontList[i].Italic := filename;
       if AROSFontList[i].BoldItalic = '' then
-        AROSFontList[i].BoldItalic := filename;  
+        AROSFontList[i].BoldItalic := filename;
     end;
     FreeMem(Test);
-  end;  
+  end;
   for i := 0 to High(AROSFontList) do
   begin
-    Result.Add(AROSFontList[i].BaseName);    
+    Result.Add(AROSFontList[i].BaseName);
   end;
   Result.Sort;
 end;
@@ -540,8 +540,8 @@ begin
     repeat
       IMsg := PIntuiMessage(GetMsg(GlobalMsgPort));
       if Assigned(IMsg) then
-        ReplyMsg(pMessage(IMsg));  
-    Until IMsg = nil; 
+        ReplyMsg(pMessage(IMsg));
+    Until IMsg = nil;
     DeleteMsgPort(GlobalMsgPort);
   end;
   GlobalMsgPort := NIL;
@@ -592,22 +592,22 @@ begin
         // Not a windows message -> next message
         if not Assigned(IMsg^.IDCMPWindow) then
         begin
-          ReplyMsg(pMessage(IMsg)); 
+          ReplyMsg(pMessage(IMsg));
           Continue;
-        end;   
+        end;
         // get the window
         AWin := IMsg^.IDCMPWindow;
-        // copy the Properties 
+        // copy the Properties
         ICode := IMsg^.Code;
         IQual := IMsg^.Qualifier;
         IClass:= IMsg^.IClass;
         // Answer to the message
         ReplyMsg(pMessage(IMsg));
-        
-        // not an attached window or Window which is currently closing 
+
+        // not an attached window or Window which is currently closing
         if not wapplication.Windowlist.isValidWindow(AWin) then
           Continue;
-        
+
         if not Assigned(AWin^.UserData) then
           Continue;
 
@@ -628,39 +628,39 @@ begin
         msgp.keyboard.shiftstate := KeyboardShiftState(IQual);
         msgp.mouse.shiftstate := msgp.keyboard.shiftstate;
         msgp.mouse.Buttons := ButtonState(IQual);
-        // Check for modal windows, only allow Refresh and newsize 
+        // Check for modal windows, only allow Refresh and newsize
         mw := nil;
         if (wapplication.TopModalForm <> nil) then
-        begin 
+        begin
           mw := TfpgAROSWindow(WidgetParentForm(TfpgWidget(Window)));
           if (mw <> nil) and (wapplication.TopModalForm <> mw) then
-          begin  
-            if (IClass = IDCMP_INACTIVEWINDOW) and TfpgAROSWindow(wapplication.TopModalForm).HandleIsValid then 
+          begin
+            if (IClass = IDCMP_INACTIVEWINDOW) and TfpgAROSWindow(wapplication.TopModalForm).HandleIsValid then
             begin // if ModalWindow is active activate the modalwindow again
               intuition.ActivateWindow(pWindow(TfpgAROSWindow(wapplication.TopModalForm).WinHandle));
               Continue;
             end;
             if not ((IClass = IDCMP_REFRESHWINDOW) or (IClass = IDCMP_NEWSIZE))then
-              Continue;             
+              Continue;
           end;
         end;
         //system.debugln('msg: $' + IntToHex(IClass, 8));
         //system.debugln('Msg: $' +IntToHex(IClass, 8) + ' Win: ' + IntToHex(PtrUInt(Window),8));
         case IClass of
           IDCMP_CLOSEWINDOW: begin
-            fpgSendMessage(nil, Window, FPGM_CLOSE, MsgP);
+            fpgPostMessage(nil, Window, FPGM_CLOSE, MsgP);
           end;
-          IDCMP_INACTIVEWINDOW: begin           
-            fpgSendMessage(nil, Window, FPGM_DEACTIVATE);
+          IDCMP_INACTIVEWINDOW: begin
+            fpgPostMessage(nil, Window, FPGM_DEACTIVATE);
           end;
           IDCMP_ACTIVEWINDOW: begin
             SetWindowTitles(AWin, PChar(Window.FTitle), PChar(Window.ScreenTitle));
-            fpgSendMessage(nil, Window, FPGM_ACTIVATE);
-          end; 
+            fpgPostMessage(nil, Window, FPGM_ACTIVATE);
+          end;
           IDCMP_REFRESHWINDOW: begin
               BeginRefresh(AWin);
               EndRefresh(AWin, True);
-              fpgSendMessage(nil, Window, FPGM_PAINT, MsgP);
+              fpgPostMessage(nil, Window, FPGM_PAINT, MsgP);
             end;
           IDCMP_INTUITICKS:begin
             fpgCheckTimers;
@@ -677,7 +677,7 @@ begin
               begin
                 //writeln('found keyboard focus');
                 Window := kwg;
-              end;  
+              end;
             end;
             //system.debug('-');
             // Mouse wheel up
@@ -689,7 +689,7 @@ begin
                 msgp.Mouse.Delta := -1
               else
                 msgp.Mouse.Delta := 1;
-              fpgSendMessage(nil, Window, FPGM_SCROLL, MsgP);
+              fpgPostMessage(nil, Window, FPGM_SCROLL, MsgP);
             end else
             begin
               keyUp := (ICode and IECODE_UP_PREFIX) <> 0;
@@ -719,15 +719,15 @@ begin
               if KeyUp then
               begin
                 //system.debug('#');
-                fpgSendMessage(nil, Window, FPGM_KEYRELEASE, MsgP);
+                fpgPostMessage(nil, Window, FPGM_KEYRELEASE, MsgP);
                 //system.debugln('+');
               end else
               begin
                 //system.debug(':');
-                fpgSendMessage(nil, Window, FPGM_KEYPRESS, MsgP);
-                fpgSendMessage(nil, Window, FPGM_KEYCHAR, Msgp);
+                fpgPostMessage(nil, Window, FPGM_KEYPRESS, MsgP);
+                fpgPostMessage(nil, Window, FPGM_KEYCHAR, Msgp);
                 //system.debugln(';');
-              end;    
+              end;
             end;
           end;
           IDCMP_NEWSIZE: begin
@@ -744,8 +744,8 @@ begin
               end;
               //writeln('----->Msg: NewSize: ',Window.Classname, ' = ', msgp.rect.Width ,' x ', msgp.rect.Height);
               if Window.Parent = nil then
-                fpgSendMessage(nil, Window, FPGM_RESIZE, MsgP);
-              fpgSendMessage(nil, Window, FPGM_PAINT, MsgP);
+                fpgPostMessage(nil, Window, FPGM_RESIZE, MsgP);
+              fpgPostMessage(nil, Window, FPGM_PAINT, MsgP);
               Window.RunningResize := False;
             end;
           end;
@@ -755,18 +755,18 @@ begin
               msgp.rect.Left := pWindow(Window.WinHandle)^.RelLeftEdge;
               msgp.rect.Top := pWindow(Window.WinHandle)^.RelTopEdge;
               //writeln('---->Msg: changewindow: ',Window.Classname, ' = ', msgp.rect.Left ,' x ', msgp.rect.Top);
-              if Window.Parent = nil then            
-                fpgSendMessage(nil, Window, FPGM_MOVE, MsgP);               
-              fpgSendMessage(nil, Window, FPGM_PAINT, MsgP);
+              if Window.Parent = nil then
+                fpgPostMessage(nil, Window, FPGM_MOVE, MsgP);
+              fpgPostMessage(nil, Window, FPGM_PAINT, MsgP);
               Window.RunningResize := False;
             end;
           end;
           IDCMP_MOUSEMOVE: begin
             //writeln('Msg:MouseMove: IQual: ', inttoHex(IQual,2));
-            
+
             //writeln('before captured Window: ', x, ', ', y);
             mw := Window;
-            
+
             if Assigned(wapplication.CapturedWindow) then
             begin
               mw := wapplication.CapturedWindow;
@@ -787,13 +787,13 @@ begin
               //writeln('before mouse enter leave: ', x, ', ', y);
               msgp.mouse.X := x;
               msgp.mouse.Y := y;
-              Window.DoMouseEnterLeaveCheck(mw, FPGM_MOUSEMOVE, msgp);            
+              Window.DoMouseEnterLeaveCheck(mw, FPGM_MOUSEMOVE, msgp);
               //writeln('after mouse enter leave: ', msgp.mouse.X, ', ', msgp.mouse.Y);
-            end;          
+            end;
             if Assigned(mw) then
             begin
-              //writeln('####Move: ', x,', ', y, ' assigned: ', mw.classname, ' Zero: ', mw.ZeroZero);  
-              fpgSendMessage(nil, mw, FPGM_MOUSEMOVE, MsgP);
+              //writeln('####Move: ', x,', ', y, ' assigned: ', mw.classname, ' Zero: ', mw.ZeroZero);
+              fpgPostMessage(nil, mw, FPGM_MOUSEMOVE, MsgP);
             end;
           end;
           IDCMP_MOUSEBUTTONS: begin
@@ -816,11 +816,11 @@ begin
             begin
               msgp.mouse.X := x;
               msgp.mouse.Y := y;
-              Window.DoMouseEnterLeaveCheck(mw, FPGM_MOUSEMOVE, msgp);            
-            end;  
+              Window.DoMouseEnterLeaveCheck(mw, FPGM_MOUSEMOVE, msgp);
+            end;
             if Assigned(mw) then
-            begin 
-              //writeln('####Click: ', x,', ', y, ' assigned: ', mw.classname, ' Zero: ', mw.ZeroZero, ' has parent: ', Assigned(mw.Parent));                         
+            begin
+              //writeln('####Click: ', x,', ', y, ' assigned: ', mw.classname, ' Zero: ', mw.ZeroZero, ' has parent: ', Assigned(mw.Parent));
               case ICode of
                 104: begin // Left Down
                   msgp.mouse.Buttons := MOUSE_LEFT;
@@ -828,8 +828,8 @@ begin
                   begin
                     //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.CaptureMouse;
-                  end;                  
-                  fpgSendMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
+                  end;
+                  fpgPostMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
                 end;
                 232: begin // Left up
                   msgp.mouse.Buttons := MOUSE_LEFT;
@@ -838,26 +838,26 @@ begin
                     //if TfpgWidget(mw).FormDesigner <> nil then
                       mw.ReleaseMouse;
                   end;
-                  fpgSendMessage(nil, mw, FPGM_MOUSEUP, MsgP);
+                  fpgPostMessage(nil, mw, FPGM_MOUSEUP, MsgP);
                 end;
                 106: begin // Middle Down
                   msgp.mouse.Buttons := MOUSE_MIDDLE;
-                  fpgSendMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
+                  fpgPostMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
                 end;
                 234: begin // Middle Up
                   msgp.mouse.Buttons := MOUSE_MIDDLE;
-                  fpgSendMessage(nil, mw, FPGM_MOUSEUP, MsgP);
+                  fpgPostMessage(nil, mw, FPGM_MOUSEUP, MsgP);
                 end;
                 105: begin // Right Down
                   msgp.mouse.Buttons := MOUSE_RIGHT;
-                  fpgSendMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
+                  fpgPostMessage(nil, mw, FPGM_MOUSEDOWN, MsgP);
                 end;
                 233: begin // Right Up
                   msgp.mouse.Buttons := MOUSE_RIGHT;
-                  fpgSendMessage(nil, mw, FPGM_MOUSEUP, MsgP);
+                  fpgPostMessage(nil, mw, FPGM_MOUSEUP, MsgP);
                 end;
               end;
-            end;            
+            end;
           end;
           else begin
             //writeln('Msg: $',IntToHex(Msg^.IClass, 8),' Code: ', Msg^.Code);
@@ -966,7 +966,7 @@ begin
   LockLayerInfo(@(Scrn^.LayerInfo));
   Layer := WhichLayer(@(Scrn^.LayerInfo), Scrn^.MouseX, Scrn^.MouseY);
   //writeln('Screen: ', Scrn^.MouseY, ', ', Scrn^.MouseX);
-  
+
   UnlockLayerInfo(@(Scrn^.LayerInfo));
   CurrentWindowHndl := 0;
   if Assigned(Layer) then
@@ -988,13 +988,13 @@ begin
       begin
         Msgp.Mouse.X := Scrn^.MouseX - PWindow(LastWindow.WinHandle)^.LeftEdge - LastWindow.BorderWidth.X;
         Msgp.Mouse.Y := Scrn^.MouseY - PWindow(LastWindow.WinHandle)^.TopEdge - LastWindow.BorderWidth.Y;
-      end;  
-      fpgSendMessage(nil, LastWindow, FPGM_MOUSEEXIT, msgp);
+      end;
+      fpgPostMessage(nil, LastWindow, FPGM_MOUSEEXIT, msgp);
     end;
 
     CurrentWindow := GetMyWidgetFromHandle(CurrentWindowHndl);
     if (CurrentWindow <> nil) then
-    begin    
+    begin
       if Assigned(CurrentWindow.Parent) then
       begin
         Msgp.Mouse.X := Scrn^.MouseX - PWindow(CurrentWindow.WinHandle)^.LeftEdge - CurrentWindow.BorderWidth.X;
@@ -1003,8 +1003,8 @@ begin
       begin
         Msgp.Mouse.X := Scrn^.MouseX - PWindow(CurrentWindow.WinHandle)^.LeftEdge - CurrentWindow.BorderWidth.X;
         Msgp.Mouse.Y := Scrn^.MouseY - PWindow(CurrentWindow.WinHandle)^.TopEdge - CurrentWindow.BorderWidth.X;
-      end;  
-      fpgSendMessage(nil, CurrentWindow, FPGM_MOUSEENTER, msgp);
+      end;
+      fpgPostMessage(nil, CurrentWindow, FPGM_MOUSEENTER, msgp);
     end;
   end;
   wapplication.LastWindowHndl := CurrentWindowHndl;
@@ -1019,7 +1019,7 @@ begin
     begin
       Msgp.Mouse.X := Scrn^.MouseX - PWindow(AWindow.WinHandle)^.LeftEdge - AWindow.BorderWidth.X;
       Msgp.Mouse.Y := Scrn^.MouseY - PWindow(AWindow.WinHandle)^.TopEdge - AWindow.BorderWidth.Y;
-    end;  
+    end;
   end;
 end;
 
@@ -1061,7 +1061,7 @@ begin
     begin
       bw := 0;
       bh := 0;
-    end;    
+    end;
     AddTags(WTags, [Integer(WA_Left), FLeft + bw, Integer(WA_Top), FTop + bw, Integer(WA_Width), 0 {FWidth + bw}, Integer(WA_Height), 0 {FHeight + bh}]);
   end else
   begin
@@ -1109,13 +1109,13 @@ begin
   begin
     BorderWidth.X := 0;
     BorderWidth.Y := 0;
-  end;  
+  end;
   //
   if GetBW then
   begin
     BorderWidth.X := FPForm^.BorderLeft;
     BorderWidth.Y := FPForm^.BorderTop;
-  end;  
+  end;
   if AParent = nil then
     WindowLimits(FPForm, Max(200, MinWidth), Max(100, MinHeight), pScreen(FPForm^.WScreen)^.Width, pScreen(FPForm^.WScreen)^.Height);
   SetWindowParameters;
@@ -1169,7 +1169,7 @@ begin
   if FocusRootWidget = Self then
   begin
     FocusRootWidget := TFPGWidget(wapplication.MainForm);
-  end;  
+  end;
   FVisible := False;
   //Debugln('-->Release ' +self.Classname +': $' + inttoHex(FWinHandle,8) + ' self: $' + inttoHex(PtrUInt(Self),8));
   if FWinHandle <= 0 then
@@ -1258,29 +1258,29 @@ begin
   begin
     //writeln('#### already got one! ', self.classname);
     //Exit;
-  end;  
+  end;
   FSkipResizeMessage := True;
   if HandleIsValid and Visible then
   begin
     if IS_CHILDREN(pWindow(WinHandle)) or (Parent <> nil) then
     begin
       dx := pWindow(WinHandle)^.Parent2^.LeftEdge + FLeft;
-      dy := pWindow(WinHandle)^.Parent2^.TopEdge + FTop;      
+      dy := pWindow(WinHandle)^.Parent2^.TopEdge + FTop;
       //writeln('Move to: ', dx, ' ; ', dy);
       //intuition.MoveWindow(pWindow(WinHandle), FLeft - pWindow(WinHandle)^.LeftEdge, FTop - pWindow(WinHandle)^.TopEdge);
       //intuition.SizeWindow(pWindow(WinHandle), FWidth - pWindow(WinHandle)^.Width, FHeight - pWindow(WinHandle)^.Height);
       intuition.ChangeWindowBox(pWindow(WinHandle),  dx,  dy, FWidth, FHeight);
-      //fpgSendMessage(nil, self.Parent, FPGM_PAINT, MsgP);
-      //fpgSendMessage(nil, self, FPGM_PAINT, MsgP);
+      //fpgPostMessage(nil, self.Parent, FPGM_PAINT, MsgP);
+      //fpgPostMessage(nil, self, FPGM_PAINT, MsgP);
       RunningResize := True;
     end else
     begin
       if ZeroZero then
         intuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth + pWindow(WinHandle)^.BorderLeft + pWindow(WinHandle)^.BorderRight, FHeight + pWindow(WinHandle)^.BorderTop + pWindow(WinHandle)^.BorderBottom)
       else
-        intuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth, FHeight);    
-      //fpgSendMessage(nil, Self, FPGM_PAINT, MsgP);
-    end;  
+        intuition.ChangeWindowBox(pWindow(WinHandle),  FLeft,  FTop, FWidth, FHeight);
+      //fpgPostMessage(nil, Self, FPGM_PAINT, MsgP);
+    end;
   end;
   FSkipResizeMessage := False;
   //writeln('<<< Leave Resize ', self.classname);
@@ -1322,18 +1322,18 @@ end;
 
 procedure TfpgArosWindow.DoSetMouseCursor;
 begin
-  
+
   if not HasHandle then
     Exit;
-  //writeln('Do Set Cursor ', Ord(FMouseCursor), ' busy: ', Ord(mcHourGlass));  
+  //writeln('Do Set Cursor ', Ord(FMouseCursor), ' busy: ', Ord(mcHourGlass));
   case FMouseCursor of
     mcHourGlass:
     begin
-      SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, True, TAG_DONE, 0]);
-    end;  
+      SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, LTrue, TAG_DONE, 0]);
+    end;
     else
-      SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, False, TAG_DONE, 0]);
-  end;  
+      SetWindowPointer(PWindow(FWinHandle), [WA_BusyPointer, LFalse, TAG_DONE, 0]);
+  end;
 end;
 
 procedure TfpgArosWindow.DoDNDEnabled(const AValue: boolean);
@@ -1429,12 +1429,12 @@ procedure TfpgArosCanvas.DoBeginDraw(awin: TfpgWindowBase; buffered: boolean);
 var
   Win: pWindow;
 begin
-  FDrawWindow := nil; 
+  FDrawWindow := nil;
   if not Assigned(AWin) then
     Exit;
   FDrawWindow := TfpgArosWindow(awin);
   if FDrawWindow.FWinHandle = 0 then
-    Exit;  
+    Exit;
   DrawPen := LongWord(-1);
   Win := PWindow(FDrawWindow.FWinHandle);
   FRastPort :=  Win^.RPort;
@@ -1798,16 +1798,16 @@ begin
       NextC;
       NextToken;
     end;
-    
+
     if Prop = 'BOLD' then
       IsBold := True;
     if Prop = 'ITALIC' then
-      IsItalic := True;  
-      
+      IsItalic := True;
+
     if prop = 'BOLD' then
     begin
       TextAttr.ta_Style := TextAttr.ta_Style or FSF_BOLD;
-    end; 
+    end;
     if prop = 'ITALIC' then
     begin
       TextAttr.ta_Style := TextAttr.ta_Style or FSF_ITALIC
@@ -1830,19 +1830,19 @@ begin
       if IsBold then
         Filename := AROSFontList[i].BoldItalic
       else
-        Filename := AROSFontList[i].Italic; 
+        Filename := AROSFontList[i].Italic;
     end else
     begin
       if IsBold then
         Filename := AROSFontList[i].Bold
       else
-        Filename := AROSFontList[i].Normal;   
-    end;  
+        Filename := AROSFontList[i].Normal;
+    end;
   end else
   begin
-    FileName := facename + '.font'; 
-  end;  
-  
+    FileName := facename + '.font';
+  end;
+
   TextAttr.ta_Name := PChar(FileName);
   TextAttr.ta_YSize := Height;
   TextAttr.ta_Flags := FPF_DISKFONT;
@@ -1851,7 +1851,7 @@ begin
     writeln(idx,' cant open Font ', desc, ' filename: ', FileName)
   else
     writeln(idx,' successful open Font ', desc, ' filename: ', FileName);
-   } 
+   }
 end;
 
 
@@ -1910,8 +1910,8 @@ begin
     RastPort^.Bitmap := AllocBitMap(100, 100, 1, BMF_CLEAR, nil);
     agraphics.SetFont(RastPort, FFontData);
     OwnRP := True;
-  end;  
-  try    
+  end;
+  try
     Result := TextLength(RastPort, PChar(str), Length(str));
   finally
     if OwnRP then
@@ -1993,11 +1993,11 @@ begin
     for y := 0 to AHeight - 1 do
     begin
       for x := 0 to AWidth - 1 do
-      begin   
+      begin
         if M and (1 shl (31 - Shift)) <> 0 then
           c^.A := 255
         else
-          c^.A := 0;          
+          c^.A := 0;
         Inc(Shift);
         if Shift > 31 then
         begin
@@ -2008,7 +2008,7 @@ begin
           M := Mask^;
           {$endif}
           Shift := 0;
-        end;        
+        end;
         Inc(c);
       end;
       if Shift > 0 then
@@ -2089,14 +2089,14 @@ end;
 procedure ReadInDevices;
 
 begin
-  
+
 end;
 
 
 procedure TfpgArosFileList.PopulateSpecialDirs(const aDirectory: TfpgString);
 const
   IgnoreDevs: array[0..10] of string =('NIL:','XPIPE:','EMU:','PED:','PRJ:','PIPE:','CON:','RAW:','SER:','PAR:','PRT:');
-  
+
   function IsInDeviceList(Str : string): Boolean;
   var
     i : Integer;
@@ -2111,7 +2111,7 @@ const
       end;
     end;
   end;
-  
+
 var
   Dl : PDosList;
   Temp: PChar;
@@ -2130,7 +2130,7 @@ begin
        if not IsInDeviceList(Str) then
        begin
          FSpecialDirs.Add(str);
-       end;  
+       end;
      end;
   until Dl = nil;
   UnLockDosList(LDF_DEVICES or LDF_READ);
@@ -2145,7 +2145,7 @@ begin
        if not IsInDeviceList(Str) then
        begin
          FSpecialDirs.Add(str);
-       end;  
+       end;
      end;
   until Dl = nil;
   UnLockDosList(LDF_VOLUMES or LDF_READ);
@@ -2160,7 +2160,7 @@ begin
        if not IsInDeviceList(Str) then
        begin
          FSpecialDirs.Add(str);
-       end;  
+       end;
      end;
   until Dl = nil;
   UnLockDosList(LDF_ASSIGNS or LDF_READ);
