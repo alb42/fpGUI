@@ -22,6 +22,9 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
+  {$IFDEF HASAMIGA}
+  athreads,
+  {$ENDIF}
   Classes,
   fpg_base,
   fpg_main,
