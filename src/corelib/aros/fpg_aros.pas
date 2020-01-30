@@ -2124,7 +2124,7 @@ begin
      Dl := NextDosEntry(Dl, LDF_DEVICES);
      if Dl <> nil then
      begin
-       Temp := PChar(Dl^.dol_Handler.dol_Name);
+       Temp := PChar(Dl^.dol_Name);
        //Temp := BSTR2STRING(Dl^.dol_Name);
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
@@ -2139,7 +2139,7 @@ begin
      Dl := NextDosEntry(Dl, LDF_VOLUMES);
      if Dl <> nil then
      begin
-       Temp := PChar(Dl^.dol_Handler.dol_Name);
+       Temp := PChar(Dl^.dol_Name);
        //Temp := BSTR2STRING(Dl^.dol_Name);
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
@@ -2154,7 +2154,7 @@ begin
      Dl := NextDosEntry(Dl, LDF_ASSIGNS);
      if Dl <> nil then
      begin
-       Temp := PChar(Dl^.dol_Handler.dol_Name);
+       Temp := PChar(Dl^.dol_Name);
        //Temp := BSTR2STRING(Dl^.dol_Name);
        Str := StrPas(Temp) + ':';
        if not IsInDeviceList(Str) then
