@@ -167,7 +167,7 @@ var
   buffer : AnsiString;
 begin
   buffer := '';
-  cinfo^.err^.format_message(cinfo, buffer);
+  //cinfo^.err^.format_message(cinfo, buffer);
   raise EJPEG.Create(buffer);
 end;
 
@@ -195,7 +195,7 @@ var
   buffer : AnsiString;
 begin
   buffer := '';
-  cinfo^.err^.format_message (cinfo, buffer);
+  //cinfo^.err^.format_message (cinfo, buffer);
   {message dialog}
   ShowMessage(buffer);
 end;
