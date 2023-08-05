@@ -164,7 +164,7 @@ end;
 
 procedure error_exit (cinfo : j_common_ptr); 
 var
-  buffer : AnisString;
+  buffer : AnsiString;
 begin
   buffer := '';
   cinfo^.err^.format_message(cinfo, buffer);
