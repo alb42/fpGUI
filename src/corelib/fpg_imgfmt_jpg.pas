@@ -167,7 +167,7 @@ var
   buffer : string;
 begin
   buffer := '';
-  cinfo^.err^.format_message(cinfo, buffer);
+  //cinfo^.err^.format_message(cinfo, buffer);
   raise EJPEG.Create(buffer);
 end;
 
@@ -195,12 +195,12 @@ var
   buffer : string;
 begin
   buffer := '';
-  cinfo^.err^.format_message (cinfo, buffer);
+  //cinfo^.err^.format_message (cinfo, buffer);
   {message dialog}
   ShowMessage(buffer);
 end;
 
-procedure format_message (cinfo : j_common_ptr; var buffer : string); 
+procedure format_message (cinfo : j_common_ptr; var buffer : openstring); 
 begin
   buffer := 'JPEG ERROR -- #' + IntToStr(cinfo^.err^.msg_code);
 end;
