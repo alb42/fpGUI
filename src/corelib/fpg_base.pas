@@ -38,7 +38,7 @@ type
   TfpgCoord       = integer;     // we might use floating point coordinates in the future...
   TfpgColor       = type longword;    // Always in AARRGGBB (Alpha, Red, Green, Blue) format!!
   TfpgString      = type AnsiString;
-  TfpgChar        = type String[4];
+  TfpgChar        = String[4];
 
   PPoint = ^TPoint;
 
