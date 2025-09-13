@@ -32,7 +32,7 @@ uses
   Contnrs,
   StrUtils,
   Intuition, InputEvent, exec, utility, tagsarray, agraphics, diskfont, amigados,
-  keymap, layers, clipboard, cybergraphics,
+  keymap, layers, clipboard, cybergraphics, cliputils,
   fpg_base,
   fpg_impl
   {$IFDEF DEBUG}
